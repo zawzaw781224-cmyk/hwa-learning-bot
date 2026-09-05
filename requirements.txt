@@ -1,3 +1,1 @@
-﻿python-telegram-bot==22.8
-python-dotenv
-fastapi
+python-telegram-bot==22.8rnpython-dotenvrnfastapirn
