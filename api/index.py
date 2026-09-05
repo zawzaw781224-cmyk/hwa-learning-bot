@@ -1,11 +1,9 @@
 import os
 
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 from telegram import Update
-from telegram.ext import (
-    Application,
-    CallbackQueryHandler,
-    CommandHandler,
-)
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from app.handlers.start import start
 from app.handlers.menu import menu_callback
@@ -13,36 +11,33 @@ from app.handlers.menu import menu_callback
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-application = (
+telegram_app = (
     Application.builder()
     .token(BOT_TOKEN)
     .updater(None)
     .build()
 )
 
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CallbackQueryHandler(menu_callback))
+telegram_app.add_handler(CommandHandler("start", start))
+telegram_app.add_handler(CallbackQueryHandler(menu_callback))
+
+app = FastAPI()
 
 
-async def handler(request):
-    if request.method != "POST":
-        return {
-            "statusCode": 405,
-            "body": "Method Not Allowed",
-        }
-
+@app.post("/api/telegram")
+async def telegram_webhook(request: Request):
     data = await request.json()
 
-    update = Update.de_json(data, application.bot)
+    update = Update.de_json(
+        data=data,
+        bot=telegram_app.bot,
+    )
 
-    await application.initialize()
+    await telegram_app.initialize()
 
     try:
-        await application.process_update(update)
+        await telegram_app.process_update(update)
     finally:
-        await application.shutdown()
+        await telegram_app.shutdown()
 
-    return {
-        "statusCode": 200,
-        "body": "OK",
-    }
+    return PlainTextResponse("OK")
